@@ -46,8 +46,8 @@ def main():
                       help='Limit the number of examples to train on.')
     argp.add_argument('--max_eval_samples', type=int, default=None,
                       help='Limit the number of examples to evaluate on.')
-    argp.add_argument('--output_entailed_set', action="store_true",
-                      help="Output entailed examples from evaluation set.")
+    argp.add_argument('--output_entailed_predictions', action="store_true",
+                      help="Output eval on entailed examples from evaluation set.")
 
     training_args, args = argp.parse_args_into_dataclasses()
 
@@ -205,11 +205,14 @@ def main():
                     f.write(json.dumps(example_with_prediction))
                     f.write('\n')
 
-        if args.output_entailed_set:
-            with open(os.path.join(training_args.output_dir, 'entailed_dataset.jsonl'), encoding='utf-8', mode='w') as f:
+        if args.output_entailed_predictions:
+            with open(os.path.join(training_args.output_dir, 'entailed_predictions.jsonl'), encoding='utf-8', mode='w') as f:
                 for i, example in enumerate(eval_dataset):
                     if example['label'] == 0:
-                        f.write(json.dumps(example))
+                        example_with_prediction = dict(example)
+                        example_with_prediction['predicted_scores'] = eval_predictions.predictions[i].tolist()
+                        example_with_prediction['predicted_label'] = int(eval_predictions.predictions[i].argmax())
+                        f.write(json.dumps(example_with_prediction))
                         f.write('\n')
 
 if __name__ == "__main__":
